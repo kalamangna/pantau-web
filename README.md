@@ -1,58 +1,103 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🌐 PANTAU WEB — Kabupaten Sinjai
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem Pemantauan Terpusat Ketersediaan, Kinerja, Keamanan, dan Kebugaran Portal Website Resmi Pemerintah Kabupaten Sinjai (**OPD, Kecamatan, Kelurahan, dan Desa**).
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🚀 Fitur Utama
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Pemantauan Uptime & Latensi Jaringan**:
+  - Pengecekan HTTP status code dan waktu respon (ms) berkala tanpa membebani server target.
+  - Deteksi dini *downtime* dengan riwayat log lengkap di basis data.
+- **Pemeriksaan Masa Aktif Sertifikat SSL**:
+  - Penghitungan mundur masa berlaku sertifikat SSL (*SSL Expiry Tracking*) melalui soket OpenSSL.
+  - Peringatan otomatis jika sertifikat SSL mendekati masa kedaluwarsa (< 14 hari).
+- **Telemetri Mendalam CMS Desa & Portal**:
+  - Penarikan telemetri berbasis API terproteksi Bearer Token.
+  - Verifikasi berkala pencadangan database (*Spatie Backup*) lokal maupun Google Drive.
+  - Peringatan otomatis jika backup database terlambat lebih dari 28 jam.
+  - Pendeteksi kerentanan keamanan jika mode debug (`APP_DEBUG=true`) terdeteksi aktif di production.
+  - Pelacakan keaktifan postingan artikel/berita (30 hari terakhir) dan status layanan mandiri warga.
+- **Peringatan Insiden Terpusat (Telegram Bot)**:
+  - Notifikasi langsung ke kanal tim teknis Diskominfo / CSIRT-Sinjaikab saat terjadi situs *down*, kegagalan backup, atau sertifikat SSL akan kedaluwarsa.
+- **Panel Admin Intuitif (Filament v5)**:
+  - Pengelompokan 4 tingkatan instansi: **OPD**, **Kecamatan**, **Kelurahan**, dan **Desa**.
+  - Aksi cepat: *Ping Uptime Langsung*, *Sinkronisasi Telemetri*, dan *Buka Portal*.
+  - Widget ringkasan ketersediaan sistem dan tabel insiden aktif.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🛠️ Stack Teknologi
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- **Framework**: [Laravel 12](https://laravel.com) (PHP 8.2+)
+- **Admin Panel**: [Filament v5](https://filamentphp.com)
+- **CSS Engine**: [Tailwind CSS v4](https://tailwindcss.com)
+- **Database**: SQLite / MySQL / MariaDB / PostgreSQL
+- **Notifikasi**: Laravel Notification Channels (Telegram Bot API)
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## 💻 Panduan Instalasi Lokal
 
-## Agentic Development
+1. **Clone Repositori**:
+   ```bash
+   git clone https://github.com/kalamangna/pantau-web.git
+   cd pantau-web
+   ```
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+2. **Instal Dependensi & Konfigurasi**:
+   ```bash
+   composer install
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+3. **Konfigurasi Environment (`.env`)**:
+   Tambahkan kredensial bot Telegram untuk notifikasi peringatan insiden:
+   ```env
+   TELEGRAM_BOT_TOKEN="your-bot-token"
+   TELEGRAM_CHAT_ID="your-chat-or-channel-id"
+   ```
+
+4. **Migrasi & Seed Data Awal**:
+   ```bash
+   php artisan migrate --seed
+   ```
+
+5. **Jalankan Server Lokal**:
+   ```bash
+   php artisan serve
+   ```
+   Akses panel admin di: `http://localhost:8000/admin`
+   - **Email**: `admin@sinjaikab.go.id`
+   - **Password**: `password`
+
+---
+
+## ⏰ Pengaturan Cron Job / Penjadwalan
+
+Tambahkan perintah berikut ke dalam crontab server peladen untuk menjalankan pengecekan otomatis:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+* * * * * cd /path/to/pantau-web && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Perintah yang berjalan secara otomatis:
+- `php artisan pantau:check-uptime`: Memeriksa HTTP status & SSL seluruh website (setiap 5 menit).
+- `php artisan pantau:sync-telemetry`: Menarik telemetri mendalam dari website desa/kelurahan (setiap 2 jam).
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 🧪 Pengujian Otomatis
 
-## Code of Conduct
+Jalankan suite pengujian menggunakan perintah:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan test
+```
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 📄 Lisensi
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Dikembangkan untuk Pemerintah Kabupaten Sinjai. Lisensi di bawah [MIT License](LICENSE).
