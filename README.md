@@ -69,8 +69,7 @@ Sistem Pemantauan Terpusat Ketersediaan, Kinerja, Keamanan, dan Kebugaran Portal
    php artisan serve
    ```
    Akses panel admin di: `http://localhost:8000/admin`
-   - **Email**: `admin@sinjaikab.go.id`
-   - **Password**: `password`
+   Akun administrator dibuat secara otomatis melalui proses seeder database.
 
 ---
 

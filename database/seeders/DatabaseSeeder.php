@@ -16,10 +16,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@sinjaikab.go.id'],
+            ['username' => 'kalamangna'],
             [
-                'name' => 'Administrator CSIRT Sinjai',
-                'password' => bcrypt('password'),
+                'name' => 'Kalamangna',
+                'username' => 'kalamangna',
+                'password' => bcrypt('Syazani'),
             ]
         );
 

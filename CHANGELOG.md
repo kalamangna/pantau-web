@@ -5,6 +5,10 @@ Semua perubahan signifikan pada proyek ini akan didokumentasikan di berkas ini s
 ## [1.0.0] - 2026-10-11
 
 ### Ditambahkan
+- **Autentikasi Login Berbasis Username Tanpa Email**:
+  - Menambahkan halaman kustom `App\Filament\Pages\Auth\Login` untuk autentikasi menggunakan `username` dan kata sandi tanpa kolom email.
+  - Memperbarui skema tabel `users` dengan kolom `username` unik dan membuat kolom `email` bersifat opsional/nullable.
+  - Menambahkan pengujian otomatis `test_can_login_with_username` pada `WebsiteMonitoringTest`.
 - **Inisialisasi Sistem Pemantauan Terpusat (PANTAU WEB)**:
   - Dibangun menggunakan **Laravel 12** dan panel admin **Filament v5** dengan tema warna Emerald.
   - Dirancang khusus untuk subdomain pemantauan Pemerintah Kabupaten Sinjai (`pantau.sinjaikab.go.id`).

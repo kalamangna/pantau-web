@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\Auth\Login;
 use App\Models\User;
 use App\Models\Website;
 use App\Notifications\CsirtIncidentNotification;
@@ -10,6 +11,7 @@ use App\Services\UptimeCheckerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class WebsiteMonitoringTest extends TestCase
@@ -21,9 +23,26 @@ class WebsiteMonitoringTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->admin = User::factory()->create([
-            'email' => 'admin@sinjaikab.go.id',
+        $this->admin = User::factory()->create();
+    }
+
+    public function test_can_login_with_username(): void
+    {
+        $user = User::create([
+            'name' => 'Kalamangna',
+            'username' => 'kalamangna',
+            'password' => bcrypt('Syazani'),
         ]);
+
+        Livewire::test(Login::class)
+            ->fillForm([
+                'login' => 'kalamangna',
+                'password' => 'Syazani',
+            ])
+            ->call('authenticate')
+            ->assertHasNoFormErrors();
+
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_admin_can_access_filament_dashboard(): void
