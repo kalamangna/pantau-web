@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\IncidentAlert;
 use App\Models\TelemetrySnapshot;
 use App\Models\Website;
+use App\Notifications\CsirtIncidentNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Throwable;
 
 class TelemetrySyncService
@@ -109,6 +111,7 @@ class TelemetrySyncService
 
             // Deteksi Peringatan: APP_DEBUG aktif di production
             if ($debugMode) {
+                $debugMsg = "Kerentanan Keamanan: Parameter APP_DEBUG terdeteksi AKTIF di lingkungan production pada portal {$website->name} ({$website->domain})! Hal ini dapat mengekspos variabel lingkungan dan kredensial peladen.";
                 IncidentAlert::updateOrCreate(
                     [
                         'website_id' => $website->id,
@@ -117,14 +120,27 @@ class TelemetrySyncService
                     ],
                     [
                         'severity' => 'critical',
-                        'message' => "Kerentanan Keamanan: APP_DEBUG terdeteksi AKTIF di lingkungan production pada portal {$website->name}!",
+                        'message' => $debugMsg,
                         'notified_at' => now(),
                     ]
                 );
+
+                try {
+                    Notification::route('telegram', config('services.telegram-bot-api.chat_id'))
+                        ->notify(new CsirtIncidentNotification(
+                            title: "🚨 PERINGATAN KEAMANAN: {$website->name}",
+                            message: $debugMsg,
+                            severity: 'critical',
+                            url: $website->url
+                        ));
+                } catch (Throwable) {
+                    // Abaikan error koneksi telegram
+                }
             }
 
             // Deteksi Peringatan: Backup overdue
             if ($backupStatus === 'overdue') {
+                $backupMsg = "Pencadangan (backup) basis data {$website->name} ({$website->domain}) sudah lebih dari 28 jam belum diperbarui (terakhir: {$latestBackupAt})!";
                 IncidentAlert::updateOrCreate(
                     [
                         'website_id' => $website->id,
@@ -133,10 +149,22 @@ class TelemetrySyncService
                     ],
                     [
                         'severity' => 'warning',
-                        'message' => "Backup basis data {$website->name} sudah lebih dari 28 jam belum diperbarui (terakhir: {$latestBackupAt})!",
+                        'message' => $backupMsg,
                         'notified_at' => now(),
                     ]
                 );
+
+                try {
+                    Notification::route('telegram', config('services.telegram-bot-api.chat_id'))
+                        ->notify(new CsirtIncidentNotification(
+                            title: "⚠️ PERINGATAN BACKUP: {$website->name}",
+                            message: $backupMsg,
+                            severity: 'warning',
+                            url: $website->url
+                        ));
+                } catch (Throwable) {
+                    // Abaikan error koneksi telegram
+                }
             }
 
             return [

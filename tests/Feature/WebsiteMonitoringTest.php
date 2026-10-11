@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Models\Website;
+use App\Notifications\CsirtIncidentNotification;
 use App\Services\TelemetrySyncService;
 use App\Services\UptimeCheckerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class WebsiteMonitoringTest extends TestCase
@@ -170,5 +172,39 @@ class WebsiteMonitoringTest extends TestCase
         $this->assertDatabaseHas('telemetry_snapshots', [
             'website_id' => $website->id,
         ]);
+    }
+
+    public function test_uptime_checker_dispatches_telegram_notification_when_offline(): void
+    {
+        Notification::fake();
+
+        config([
+            'services.telegram-bot-api.token' => 'dummy-bot-token',
+            'services.telegram-bot-api.chat_id' => '-100123456789',
+        ]);
+
+        Http::fake([
+            'https://diskominfo.sinjaikab.go.id*' => Http::response('Server Error', 500),
+        ]);
+
+        $website = Website::create([
+            'name' => 'Dinas Komunikasi, Informatika dan Persandian',
+            'slug' => 'diskominfo',
+            'category' => 'opd',
+            'domain' => 'diskominfo.sinjaikab.go.id',
+            'url' => 'https://diskominfo.sinjaikab.go.id',
+            'current_status' => 'online',
+            'is_active' => true,
+        ]);
+
+        $service = new UptimeCheckerService;
+        $service->check($website);
+
+        Notification::assertSentOnDemand(
+            CsirtIncidentNotification::class,
+            function ($notification) {
+                return $notification->severity === 'critical';
+            }
+        );
     }
 }

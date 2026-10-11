@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\IncidentAlert;
 use App\Models\UptimeLog;
 use App\Models\Website;
+use App\Notifications\CsirtIncidentNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Throwable;
 
 class UptimeCheckerService
@@ -81,13 +83,26 @@ class UptimeCheckerService
 
         // Buat alert jika website down
         if ($currentStatus === 'offline' && $previousStatus !== 'offline') {
+            $msg = "Portal {$website->name} ({$website->domain}) tidak dapat diakses!\nKode HTTP: {$httpCode}\nError: {$errorMessage}";
             IncidentAlert::create([
                 'website_id' => $website->id,
                 'alert_type' => 'down',
                 'severity' => 'critical',
-                'message' => "Portal {$website->name} ({$website->domain}) tidak dapat diakses! Error: {$errorMessage}",
+                'message' => $msg,
                 'notified_at' => now(),
             ]);
+
+            try {
+                Notification::route('telegram', config('services.telegram-bot-api.chat_id'))
+                    ->notify(new CsirtIncidentNotification(
+                        title: "🚨 INSIDEN SITUS DOWN: {$website->name}",
+                        message: $msg,
+                        severity: 'critical',
+                        url: $website->url
+                    ));
+            } catch (Throwable) {
+                // Abaikan error koneksi telegram
+            }
         } elseif ($currentStatus === 'online' && $previousStatus === 'offline') {
             // Selesaikan insiden down sebelumnya
             IncidentAlert::where('website_id', $website->id)
@@ -97,6 +112,18 @@ class UptimeCheckerService
                     'is_resolved' => true,
                     'resolved_at' => now(),
                 ]);
+
+            try {
+                Notification::route('telegram', config('services.telegram-bot-api.chat_id'))
+                    ->notify(new CsirtIncidentNotification(
+                        title: "✅ SITUS KEMBALI NORMAL: {$website->name}",
+                        message: "Portal {$website->name} ({$website->domain}) telah pulih kembali dan dapat diakses (Respon: {$responseTimeMs} ms).",
+                        severity: 'info',
+                        url: $website->url
+                    ));
+            } catch (Throwable) {
+                // Abaikan error koneksi telegram
+            }
         }
 
         // Peringatan jika SSL akan kedaluwarsa (< 14 hari)
@@ -107,13 +134,26 @@ class UptimeCheckerService
                 ->first();
 
             if (! $existingAlert) {
+                $sslMsg = "Sertifikat SSL {$website->name} ({$website->domain}) akan kedaluwarsa dalam {$sslInfo['days_left']} hari ({$sslInfo['expires_at']})!";
                 IncidentAlert::create([
                     'website_id' => $website->id,
                     'alert_type' => 'ssl_expiring',
                     'severity' => $sslInfo['days_left'] <= 3 ? 'critical' : 'warning',
-                    'message' => "Sertifikat SSL {$website->name} ({$website->domain}) akan kedaluwarsa dalam {$sslInfo['days_left']} hari ({$sslInfo['expires_at']})",
+                    'message' => $sslMsg,
                     'notified_at' => now(),
                 ]);
+
+                try {
+                    Notification::route('telegram', config('services.telegram-bot-api.chat_id'))
+                        ->notify(new CsirtIncidentNotification(
+                            title: "⚠️ PERINGATAN SSL: {$website->name}",
+                            message: $sslMsg,
+                            severity: $sslInfo['days_left'] <= 3 ? 'critical' : 'warning',
+                            url: $website->url
+                        ));
+                } catch (Throwable) {
+                    // Abaikan error koneksi telegram
+                }
             }
         }
 
